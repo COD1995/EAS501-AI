@@ -1,0 +1,431 @@
+/* @theme ub */
+
+/*--------------------------------------------------------------
+   1. Slide Container
+--------------------------------------------------------------*/
+section {
+    font-size: 20px;
+    font-family: "Roboto", "Arial", "Helvetica Neue", "Helvetica", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    background: url('../slides/background.png') center center / cover no-repeat;
+    padding-top: 7.5rem;
+    padding-left: 2rem;
+    box-sizing: border-box;
+    color: #333;
+}
+
+/* Footer-like Text */
+section::after {
+    content: attr(data-marpit-pagination) '/' attr(data-marpit-pagination-total);
+    position: absolute;
+    bottom: 0.5rem;
+    right: 1rem;
+    font-size: 20px;
+    font-weight: bold;
+    font-family: "Roboto", "Arial", sans-serif;
+    color: #005BBB;
+}
+
+/*--------------------------------------------------------------
+   2. Links & Emphasis
+--------------------------------------------------------------*/
+a {
+    color: #73c2fb;
+    /* Light blue link color */
+}
+
+em {
+    color: #FF5733;
+    /* Distinct reddish-orange color */
+    font-style: italic;
+    font-weight: normal;
+}
+
+/*--------------------------------------------------------------
+   3. Blockquotes
+--------------------------------------------------------------*/
+blockquote {
+    position: relative;
+    max-width: 90%;
+    /* Constrain width for slides */
+    margin: 1rem auto;
+    /* Reduced vertical spacing */
+    padding: 0.75rem 1rem;
+    /* Smaller padding */
+    border-left: 3px solid #005BBB;
+    /* Thinner UB Blue accent */
+    background-color: #fff;
+    /* Clean white background */
+    font-style: italic;
+    font-family: "Roboto", "Arial", sans-serif;
+    font-size: 18px;
+    /* Smaller font size */
+    color: #005BBB;
+    /* Light UB color for text */
+    line-height: 1.4;
+    border-radius: 3px;
+    /* Subtle rounding */
+}
+
+/* Decorative opening quote */
+blockquote::before {
+    content: "“";
+    position: absolute;
+    top: -5px;
+    left: 5px;
+    font-size: 1.5rem;
+    /* Reduced size */
+    color: #005BBB;
+}
+
+/* Decorative closing quote */
+blockquote::after {
+    content: "”";
+    position: absolute;
+    bottom: -5px;
+    right: 5px;
+    font-size: 1.5rem;
+    /* Reduced size */
+    color: #005BBB;
+}
+
+/*--------------------------------------------------------------
+   4. Headings
+--------------------------------------------------------------*/
+h1 {
+    margin-left: 0.5rem;
+    font-size: 64px;
+    margin-bottom: 1rem;
+    color: white;
+    font-family: "Montserrat", "Roboto", "Arial", sans-serif;
+}
+
+/*
+   Note: h2 uses absolute positioning.
+   If overflow issues occur, remove position: absolute;
+*/
+h2 {
+    color: #005BBB;
+    position: absolute;
+    top: 4.0rem;
+    left: 2rem;
+    padding: 0;
+    width: calc(100% - 4rem);
+    text-align: left;
+    box-sizing: border-box;
+    font-family: "Montserrat", "Roboto", "Arial", sans-serif;
+    font-size: 32px;
+}
+
+/*--------------------------------------------------------------
+   5. Paragraphs & Lists
+--------------------------------------------------------------*/
+p {
+    margin-left: 0.5rem;
+    max-width: 97%;
+    margin-top: 0.2rem;
+    margin-bottom: 0.2rem;
+    line-height: 1.4;
+    font-family: "Roboto", "Arial", sans-serif;
+}
+
+ul,
+ol {
+    margin: 0;
+    padding-left: 1.2rem;
+    margin-bottom: 0.3rem;
+    line-height: 1.4;
+    font-family: "Roboto", "Arial", sans-serif;
+}
+
+li {
+    margin-left: 0.3rem;
+    margin-bottom: 0.2rem;
+    margin-right: 0.5rem;
+}
+
+/*--------------------------------------------------------------
+   6. Tables
+--------------------------------------------------------------*/
+table {
+    width: 90%;
+    max-width: 100%;
+    border-collapse: collapse;
+    font-size: 16px;
+    margin-top: 1rem;
+    margin-left: 0.4rem;
+    table-layout: auto;
+    /* Let columns auto-resize */
+    font-family: "Roboto", "Arial", sans-serif;
+}
+
+th,
+td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+/*--------------------------------------------------------------
+   7. Columns Layout
+--------------------------------------------------------------*/
+.columns {
+    width: 97%;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    /* Adjust column sizes here */
+    gap: 1.5rem;
+    margin: 0 0 0.5rem 0.5rem;
+}
+
+.columns>*:first-child {
+    position: relative;
+    padding-right: 1rem;
+    margin-right: 1rem;
+    border-right: none;
+}
+
+/* Visible divider for first column */
+.columns>*:first-child::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 20px;
+    /* Adjust to move divider lower */
+    bottom: 20px;
+    /* Adjust to shorten or lengthen divider */
+    width: 1px;
+    background-color: #ccc;
+}
+
+/*--------------------------------------------------------------
+   8. Media Elements (Images, Iframes, Videos)
+--------------------------------------------------------------*/
+img,
+iframe,
+video {
+    max-width: 98%;
+    height: auto;
+    display: block;
+}
+
+/*--------------------------------------------------------------
+   9. Code Styling (Generic)
+--------------------------------------------------------------*/
+pre {
+    background-color: #f5f5f5;
+    /* Light gray background for better contrast */
+    border: 1px solid #ccc;
+    /* Subtle border */
+    border-radius: 4px;
+    /* Soft rounded corners */
+    padding: 0.3rem 0.8rem;
+    /* Adjusted padding to prevent gaps */
+    margin: 0.5rem 0;
+    /* Consistent spacing around code blocks */
+    box-sizing: border-box;
+    width: 100%;
+    /* Ensure full-width inside containers */
+    font-family: "Fira Code", "Menlo", "Monaco", "Courier New", monospace;
+}
+
+pre code {
+    font-family: inherit;
+    /* Use the same font as <pre> */
+    font-size: 14px;
+    /* Readable font size */
+    line-height: 1.4;
+    /* Slightly reduced line spacing for compactness */
+    color: #333;
+    /* Dark gray text for readability */
+    white-space: pre-wrap;
+    /* Wrap lines properly */
+    word-break: break-word;
+    /* Prevent layout breaks due to long words */
+    display: block;
+    /* Ensure code behaves as a block element */
+    padding: 0;
+    /* Remove unnecessary padding */
+    margin: 0;
+    /* Ensure no extra spacing */
+    box-shadow: none !important;
+    /* Remove unwanted shadow effects */
+}
+
+/* Remove highlight.js backgrounds or shadows */
+.hljs,
+pre code.hljs {
+    background: none !important;
+    box-shadow: none !important;
+}
+
+/* Clear any per-line highlight backgrounds (line numbers, etc.) */
+.hljs-ln-line,
+.hljs-line-highlight,
+.code-line {
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+/*--------------------------------------------------------------
+   9a. Bash Code Styling
+--------------------------------------------------------------*/
+/* 
+   The following rules override the generic pre styling for Bash code blocks.
+   If your Markdown uses "```bash", ensure that the <code> element gets a
+   "language-bash" or "language-sh" class.
+*/
+
+/* Attempt to remove parent <pre> styling using :has() (requires browser support) */
+pre:has(> code.language-bash),
+pre:has(> code.language-sh) {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* Style the inner <code> element for Bash */
+pre code.language-bash,
+pre code.language-sh {
+    display: block;
+    width: 97%;
+    background-color: #2d2d2d !important;
+    /* Dark background for terminal look */
+    color: #f8f8f2 !important;
+    /* Light text for readability */
+    padding: 0.5rem !important;
+    border-radius: 4px !important;
+    overflow-x: auto;
+    font-family: "Fira Code", "Menlo", "Monaco", "Courier New", monospace;
+    font-size: 14px !important;
+    /* Smaller font size for Bash code */
+    line-height: 1.4;
+    margin: 0.5rem 0;
+}
+
+/*--------------------------------------------------------------
+   10. Inline Code
+--------------------------------------------------------------*/
+code {
+    font-family: "Fira Code", "Menlo", "Monaco", "Courier New", monospace;
+    color: #c7254e;
+    /* Reddish text for contrast */
+    background: transparent !important;
+    padding: 0.2em 0.2em;
+    font-size: 0.8em;
+}
+
+/*--------------------------------------------------------------
+   11. Python-Specific Highlighting
+--------------------------------------------------------------*/
+.language-python .hljs-keyword,
+.language-python .hljs-built_in,
+.language-python .hljs-literal,
+.language-python .hljs-symbol,
+.language-python .hljs-name {
+    color: #d73a49;
+    /* GitHub-like red for Python keywords */
+    font-weight: bold;
+}
+
+.language-python .hljs-string,
+.language-python .hljs-attr {
+    color: #22863a;
+    /* Green shade for strings */
+}
+
+.language-python .hljs-number,
+.language-python .hljs-bullet,
+.language-python .hljs-template-tag {
+    color: #005cc5;
+    /* Blue shade for numbers, bullet points, etc. */
+}
+
+.language-python .hljs-comment {
+    color: #999999;
+    /* Gray for comments */
+    font-style: italic;
+}
+
+.language-python .hljs-function .hljs-title {
+    color: #6f42c1;
+    /* Purple for function names */
+    font-weight: bold;
+}
+
+/*--------------------------------------------------------------
+   12. Additional Components
+--------------------------------------------------------------*/
+.subtitle {
+    font-size: 30px;
+    font-weight: bold;
+    color: #fff !important;
+    margin-bottom: 1rem;
+    text-align: left;
+    box-sizing: border-box;
+    margin-left: -1rem;
+    /* Move subtitle further to the left */
+    font-family: "Montserrat", "Roboto", "Arial", sans-serif;
+}
+
+.course-info {
+    font-family: "Georgia", "Times New Roman", serif;
+    font-size: 18px;
+    color: white;
+    border: 2px solid white;
+    border-radius: 6px;
+    padding: 0.5rem 1rem 0.5rem 0.5rem;
+    /* Top, Right, Bottom, Left */
+    margin: 0.5rem;
+    display: inline-block;
+    text-align: left;
+}
+
+.course-info p {
+    font-family: inherit;
+    color: inherit;
+}
+
+.course-info strong {
+    font-family: inherit;
+    font-weight: bold;
+    color: white;
+}
+
+.small-caption {
+    font-size: 0.7em;
+    /* Smaller font size for the caption */
+    color: #005BBB !important;
+    /* UB Blue text */
+    text-align: left;
+    /* Align text to the left */
+    font-family: "Roboto", "Arial", sans-serif;
+}
+
+.center-img {
+    display: flex;
+    flex-direction: column;
+    /* Stack items vertically */
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin: 10px 0 5px;
+    text-align: center;
+}
+
+.center-img img {
+    max-width: 100%;
+    /* Responsive scaling */
+    height: auto;
+    /* Maintain aspect ratio */
+}

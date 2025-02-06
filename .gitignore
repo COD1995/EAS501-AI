@@ -1,0 +1,12 @@
+#ignore .vscode folder
+.vscode/
+
+# ignore code folder
+code/
+
+# ignore markdown files folder
+markdown_files/
+
+# ignore the pdf and html files in the slides folder
+slides/*.pdf
+slides/*.html
