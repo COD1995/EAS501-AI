@@ -137,8 +137,10 @@ ol {
     margin: 0;
     padding-left: 1.2rem;
     margin-bottom: 0.3rem;
+    margin-left: 1.0rem;
     line-height: 1.4;
     font-family: "Roboto", "Arial", sans-serif;
+    font-size: 0.9em;
 }
 
 li {
@@ -146,6 +148,20 @@ li {
     margin-bottom: 0.2rem;
     margin-right: 0.5rem;
 }
+
+ul li::marker {
+    color: #005BBB !important;
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+ol li::marker {
+    color: #005BBB !important;
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+
 
 /*--------------------------------------------------------------
    6. Tables
@@ -233,7 +249,7 @@ pre {
     margin: 0.5rem 0;
     /* Consistent spacing around code blocks */
     box-sizing: border-box;
-    width: 100%;
+    width: 98%;
     /* Ensure full-width inside containers */
     font-family: "Fira Code", "Menlo", "Monaco", "Courier New", monospace;
 }
