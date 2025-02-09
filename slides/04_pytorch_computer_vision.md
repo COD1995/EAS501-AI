@@ -1452,6 +1452,7 @@ We can use this dictionary to compare the baseline model results to other models
 
 ---
 
+## Loss, optimizer, evaluation metrics and functionization 
 <div class="columns">
 <div>
 
@@ -1521,6 +1522,8 @@ def train_step(model: torch.nn.Module,
 
 ---
 
+## Loss, optimizer, evaluation metrics and functionization (cont.)
+
 Let's also functionize our testing loop. 
 
 <div class="columns">
@@ -1558,7 +1561,201 @@ def test_step(data_loader: torch.utils.data.DataLoader,
 Now we've got some functions for training and testing our model, let's run them. 
 - You can customize the functions to your liking. That is 10/10 for code reusability. 
 
+</div>
+</div>
+
+---
+
+## Using the functionized training and test loops
+
+<div class="columns">
+<div>
+
 ```python
+torch.manual_seed(42)
+
+# Measure time
+from timeit import default_timer as timer
+train_time_start_on_gpu = timer()
+
+epochs = 3
+for epoch in tqdm(range(epochs)):
+    print(f"Epoch: {epoch}\n---------")
+    train_step(data_loader=train_dataloader, 
+        model=model_1, 
+        loss_fn=loss_fn,
+        optimizer=optimizer,
+        accuracy_fn=accuracy_fn
+    )
+    test_step(data_loader=test_dataloader,
+        model=model_1,
+        loss_fn=loss_fn,
+        accuracy_fn=accuracy_fn
+    )
+
+train_time_end_on_gpu = timer()
+total_train_time_model_1 = print_train_time(start=train_time_start_on_gpu,end=train_time_end_on_gpu, device=device)
+```
+</div>
+<div>
+
+```sh
+0%|          | 0/3 [00:00<?, ?it/s]
+Epoch: 0
+---------
+Train loss: 1.09199 | Train accuracy: 61.34%
+Test loss: 0.95636 | Test accuracy: 65.00%
+
+Epoch: 1
+---------
+Train loss: 0.78101 | Train accuracy: 71.93%
+Test loss: 0.72227 | Test accuracy: 73.91%
+
+Epoch: 2
+---------
+Train loss: 0.67027 | Train accuracy: 75.94%
+Test loss: 0.68500 | Test accuracy: 75.02%
+
+Train time on cuda: 36.878 seconds
+```
+
+**Question**: "I used a GPU but my model didn't train faster, why might that be?"
+
+**Answer**: *For small datasets and models, the data transfer time to the GPU can outweigh its computational benefits, making the CPU more efficient, whereas for larger datasets and models, the GPU's speed generally outweighs the transfer cost.*
+
+</div>
+</div>
+
+---
+
+## Evaluating Model 1
+
+<div class="columns">
+<div>
+
+```python
+# Move values to device
+torch.manual_seed(42)
+def eval_model(model: torch.nn.Module, 
+               data_loader: torch.utils.data.DataLoader, 
+               loss_fn: torch.nn.Module, 
+               accuracy_fn, 
+               device: torch.device = device):
+    """Evaluates a given model on a given dataset.
+
+    Args:
+        model (torch.nn.Module): A PyTorch model capable of making predictions on data_loader.
+        data_loader (torch.utils.data.DataLoader): The target dataset to predict on.
+        loss_fn (torch.nn.Module): The loss function of model.
+        accuracy_fn: An accuracy function to compare the models predictions to the truth labels.
+        device (str, optional): Target device to compute on. Defaults to device.
+
+    Returns:
+        (dict): Results of model making predictions on data_loader.
+    """
+    loss, acc = 0, 0
+    model.eval()
+```
+
+</div>
+<div>
+
+```python
+    with torch.inference_mode():
+        for X, y in data_loader:
+            # Send data to the target device
+            X, y = X.to(device), y.to(device)
+            y_pred = model(X)
+            loss += loss_fn(y_pred, y)
+            acc += accuracy_fn(y_true=y, y_pred=y_pred.argmax(dim=1))
+        
+        # Scale loss and acc
+        loss /= len(data_loader)
+        acc /= len(data_loader)
+    return {"model_name": model.__class__.__name__, # only works when model was created with a class
+            "model_loss": loss.item(),
+            "model_acc": acc}
+
+# Calculate model 1 results with device-agnostic code 
+model_1_results = eval_model(model=model_1, data_loader=test_dataloader,
+    loss_fn=loss_fn, accuracy_fn=accuracy_fn,
+    device=device
+)
+model_1_results
+```
+
+</div>
+</div>
+
+---
+
+## Comparing our baseline 
+
+<div class="columns">
+<div>
+
+```sh
+{'model_name': 'FashionMNISTModelV1',
+ 'model_loss': 0.6850000023841858,
+ 'model_acc': 75.01923076923077}
+```
+
+check the results of the baseline model
+
+```sh
+{'model_name': 'FashionMNISTModelV0',
+ 'model_loss': 0.47664403915405273,
+ 'model_acc': 83.4301282051282}
+```
+
+Woah, in this case, it looks like adding non-linearities to our model made it perform worse than the baseline.
+- That's a thing to note in machine learning, sometimes the thing you thought should work doesn't. And then the thing you thought might not work does.
+
+From the looks of things, it seems like our model is **overfitting** on the training data.
+- Overfitting means our model is learning the training data well but those patterns aren't generalizing to the testing data.
+
+</div>
+<div>
+
+Two of the main ways to fix overfitting include:
+1. Using a smaller or different model (some models fit certain kinds of data better than others).
+2. Using a larger dataset (the more data, the more chance a model has to learn generalizable patterns).
+
+These are common solutions but it does not end there. **Search online** for more ways to fix overfitting.
+
+</div>
+</div>
+
+---
+
+<!-- _backgroundImage: "url('../slides/title.png')" -->
+<!-- _paginate: skip -->
+
+# Model 2: Building a Convolutional Neural Network (CNN)
+
+---
+
+## CNN Model Architecture
+
+<div class="columns">
+<div>
+
+It's time to create a [Convolutional Neural Network](https://en.wikipedia.org/wiki/Convolutional_neural_network) (CNN or ConvNet).
+
+- CNN's are known for their capabilities to find patterns in visual data.
+
+And since we're dealing with visual data, let's see if using a CNN model can improve upon our baseline.
+
+- The CNN model we're going to be using is known as **TinyVGG** from the [CNN Explainer](https://poloclub.github.io/cnn-explainer/) website.
+
+It follows the typical structure of a convolutional neural network:
+
+`Input layer -> [Convolutional layer -> activation layer -> pooling layer] -> Output layer`
+
+Where the contents of `[Convolutional layer -> activation layer -> pooling layer]` can be upscaled and repeated multiple times, depending on requirements.
+
+
+
 
 
 
