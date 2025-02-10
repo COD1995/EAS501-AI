@@ -124,7 +124,7 @@ h2 {
    5. Paragraphs & Lists
 --------------------------------------------------------------*/
 p {
-    margin-left: 0.5rem;
+    margin-left: 0.2rem;
     max-width: 97%;
     margin-top: 0.2rem;
     margin-bottom: 0.2rem;
@@ -144,7 +144,7 @@ ol {
 }
 
 li {
-    margin-left: 0.3rem;
+    margin-left: 0.1rem;
     margin-bottom: 0.2rem;
     margin-right: 0.5rem;
 }
@@ -214,13 +214,12 @@ th {
 .columns>*:first-child::after {
     content: "";
     position: absolute;
-    right: 0;
+    right: -10px;
     top: 20px;
     /* Adjust to move divider lower */
     bottom: 20px;
     /* Adjust to shorten or lengthen divider */
-    width: 1px;
-    background-color: #ccc;
+    border-right: 3px dotted #ccc;
 }
 
 /*--------------------------------------------------------------

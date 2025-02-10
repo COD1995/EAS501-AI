@@ -1746,13 +1746,375 @@ It's time to create a [Convolutional Neural Network](https://en.wikipedia.org/wi
 
 And since we're dealing with visual data, let's see if using a CNN model can improve upon our baseline.
 
-- The CNN model we're going to be using is known as **TinyVGG** from the [CNN Explainer](https://poloclub.github.io/cnn-explainer/) website.
+- The CNN model we're going to be using is known as **TinyVGG** from the [CNN Explainer](https://poloclub.github.io/cnn-explainer/) website. (You should definitely check it out if you're interested in learning more about CNNs).
 
 It follows the typical structure of a convolutional neural network:
 
-`Input layer -> [Convolutional layer -> activation layer -> pooling layer] -> Output layer`
+- `Input layer -> [Convolutional layer -> activation layer -> pooling layer] -> Output layer`
 
 Where the contents of `[Convolutional layer -> activation layer -> pooling layer]` can be upscaled and repeated multiple times, depending on requirements.
+
+</div>
+<div>
+
+### What model should I use?
+
+> **Question:** Wait, you say CNN's are good for images, are there any other model types I should be aware of?
+
+Good question.
+
+This table is a good general guide for which model to use (though there are exceptions).
+
+| **Problem type** | **Model to use (generally)** | **Code example** |
+| ----- | ----- | ----- |
+| Structured data (Excel spreadsheets, row and column data) | Gradient boosted models, Random Forests, XGBoost | [`sklearn.ensemble`](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.ensemble), [XGBoost library](https://xgboost.readthedocs.io/en/stable/) |
+| Unstructured data (images, audio, language) | Convolutional Neural Networks, Transformers | [`torchvision.models`](https://pytorch.org/vision/stable/models.html), [HuggingFace Transformers](https://huggingface.co/docs/transformers/index) |
+
+</div>
+</div>
+
+---
+
+## CNN Model Architecture (cont.)
+
+<div class="columns">
+<div>
+
+Enough talk, let's build the model.
+
+![TinyVGG architecture, as setup by CNN explainer website](https://raw.githubusercontent.com/mrdbourke/pytorch-deep-learning/main/images/03-cnn-explainer-model.png)
+
+To do so, we'll leverage the [`nn.Conv2d()`](https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html) and [`nn.MaxPool2d()`](https://pytorch.org/docs/stable/generated/torch.nn.MaxPool2d.html) layers from `torch.nn`.
+
+```python
+# Create a convolutional neural network
+class FashionMNISTModelV2(nn.Module):
+    """
+    Model architecture copying TinyVGG from:
+    https://poloclub.github.io/cnn-explainer/
+    """
+    def __init__(self, input_shape: int, hidden_units: int, output_shape: int):
+```
+
+</div>
+<div>
+
+```python
+        super().__init__()
+        self.block_1 = nn.Sequential(
+            nn.Conv2d(in_channels=input_shape,
+                      out_channels=hidden_units,
+                      kernel_size=3, # how big is the square that's going over the image?
+                      stride=1, # default
+                      padding=1),# options = "valid" (no padding) or "same" (output has same shape as input) or int for specific number
+            nn.ReLU(),
+            nn.Conv2d(in_channels=hidden_units,
+                      out_channels=hidden_units,
+                      kernel_size=3,
+                      stride=1,
+                      padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2,
+                         stride=2) # default stride value is same as kernel_size
+        )
+```
+</div>
+</div>
+
+---
+
+## CNN Model Architecture (cont.)
+
+<div class="columns">
+<div>
+
+```python
+        self.block_2 = nn.Sequential(
+            nn.Conv2d(hidden_units, hidden_units, 3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(hidden_units, hidden_units, 3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2)
+        )
+        self.classifier = nn.Sequential(
+            nn.Flatten(),
+            # Where did this in_features shape come from?
+            # It's because each layer of our network compresses and changes the shape of our input data.
+            nn.Linear(in_features=hidden_units*7*7,
+                      out_features=output_shape)
+        )
+
+    def forward(self, x: torch.Tensor):
+        x = self.block_1(x)
+        # print(x.shape)
+        x = self.block_2(x)
+        # print(x.shape)
+        x = self.classifier(x)
+        # print(x.shape)
+        return x
+```
+
+</div>
+<div>
+
+```python
+torch.manual_seed(42)
+model_2 = FashionMNISTModelV2(input_shape=1,
+    hidden_units=10,
+    output_shape=len(class_names)).to(device)
+model_2
+``` 
+
+Nice! Our biggest model yet!
+
+- What we've done is a common practice in machine learning.
+
+- Find a model architecture somewhere and replicate it with code.
+
+Now let's understand the new components we just added to our model.
+
+</div>
+</div>
+
+---
+
+## Stepping through `nn.Conv2d()`
+
+<div class="columns">
+<div>
+
+We could start using our model above and see what happens but let's first step through the two new layers we've added:
+* [`nn.Conv2d()`](https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html), also known as a convolutional layer.
+* [`nn.MaxPool2d()`](https://pytorch.org/docs/stable/generated/torch.nn.MaxPool2d.html), also known as a max pooling layer.
+
+> **Question:** What does the "2d" in `nn.Conv2d()` stand for?
+>
+> - The 2d is for 2-dimensional data. As in, our images have two dimensions: height and width. Yes, there's color channel dimension but each of the color channel dimensions have two dimensions too: height and width.
+>
+> - For other dimensional data (such as 1D for text or 3D for 3D objects) there's also `nn.Conv1d()` and `nn.Conv3d()`.
+
+To test the layers out, let's create some toy data just like the data used on CNN Explainer.
+
+</div>
+<div>
+
+```python
+torch.manual_seed(42)
+
+# Create sample batch of random numbers with same size as image batch
+images = torch.randn(size=(32, 3, 64, 64)) # [batch_size, color_channels, height, width]
+test_image = images[0] # get a single image for testing
+print(f"Image batch shape: {images.shape} -> [batch_size, color_channels, height, width]")
+print(f"Single image shape: {test_image.shape} -> [color_channels, height, width]")
+print(f"Single image pixel values:\n{test_image}")
+```
+```sh
+Image batch shape: torch.Size([32, 3, 64, 64]) -> [batch_size, color_channels, height, width]
+Single image shape: torch.Size([3, 64, 64]) -> [color_channels, height, width]
+Single image pixel values:
+tensor([[[ 1.9269,  1.4873,  0.9007,  ...,  1.8446, -1.1845,  1.3835],
+            [ 1.4451,  0.8564,  2.2181,  ...,  0.3399,  0.7200,  0.4114],
+            [ 1.9312,  1.0119, -1.4364,  ..., -0.5558,  0.7043,  0.7099],
+            ...,
+            [-0.4092,  1.5199,  0.2401,  ..., -0.2558,  0.7870,  0.9924]]])
+```
+</div>
+</div>
+
+---
+
+<div class="columns">
+<div>
+
+Let's create an example `nn.Conv2d()` with various parameters:
+* `in_channels` (int) - Number of channels in the input image.
+* `out_channels` (int) - Number of channels produced by the convolution.
+* `kernel_size` (int or tuple) - Size of the convolving kernel/filter.
+* `stride` (int or tuple, optional) - How big of a step the convolving kernel takes at a time. Default: 1.
+* `padding` (int, tuple, str) - Padding added to all four sides of input. Default: 0.
+</div>
+<div>
+
+![example of going through the different parameters of a Conv2d layer](https://raw.githubusercontent.com/mrdbourke/pytorch-deep-learning/main/images/03-conv2d-layer.gif)
+
+*Example of what happens when you change the hyperparameters of a `nn.Conv2d()` layer.*
+
+</div>
+</div>
+
+---
+
+## Stepping through `nn.Conv2d()` (cont.)
+
+<div class="columns">
+<div>
+
+```python
+torch.manual_seed(42)
+
+# Create a convolutional layer with same dimensions as TinyVGG
+# (try changing any of the parameters and see what happens)
+conv_layer = nn.Conv2d(in_channels=3,
+                       out_channels=10,
+                       kernel_size=3,
+                       stride=1,
+                       padding=0) # also try using "valid" or "same" here
+
+# Pass the data through the convolutional layer
+conv_layer(test_image) # Note: If running PyTorch <1.11.0, this will error because of shape issues (nn.Conv.2d() expects a 4d tensor as input)
+```
+Output is ignored because it is a bunch of transformed numbers, it does not make sense to humans.
+
+</div>
+<div>
+If we try to pass a single image in, we get a shape mismatch error:
+
+> `RuntimeError: Expected 4-dimensional input for 4-dimensional weight [10, 3, 3, 3], but got 3-dimensional input of size [3, 64, 64] instead`
+>
+> **Note:** If you're running PyTorch 1.11.0+, this error won't occur.
+
+- This is because our `nn.Conv2d()` layer expects a 4-dimensional tensor as input with size `(N, C, H, W)` or `[batch_size, color_channels, height, width]`. **Right now** our single image `test_image` only has a shape of `[color_channels, height, width]` or `[3, 64, 64]`.
+
+We can fix this for a single image using `test_image.unsqueeze(dim=0)` to add an extra dimension for `N`.
+
+```python
+# Add extra dimension to test image
+test_image.unsqueeze(dim=0).shape
+```
+```sh
+torch.Size([1, 3, 64, 64])
+```
+</div>
+</div>
+
+---
+
+## Stepping through `nn.Conv2d()` (cont.)
+
+<div class="columns">
+<div>
+
+Alright, now we got that out of the way, let's pass our single image through the convolutional layer.
+
+```python
+# Pass test image with extra dimension through conv_layer
+conv_layer(test_image.unsqueeze(dim=0)).shape
+```
+```sh
+torch.Size([1, 10, 62, 62])
+```
+
+Hmm, notice what happens to our shape (the same shape as the first layer of TinyVGG on [CNN Explainer](https://poloclub.github.io/cnn-explainer/)), we get different channel sizes as well as different pixel sizes.
+
+*What if we changed the values of `conv_layer`?*
+
+```python
+torch.manual_seed(42)
+# Create a new conv_layer with different values (try setting these to whatever you like)
+conv_layer_2 = nn.Conv2d(in_channels=3, # same number of color channels as our input image
+                         out_channels=10,
+                         kernel_size=(5, 5), # kernel is usually a square so a tuple also works
+                         stride=2,
+                         padding=0)
+conv_layer_2(test_image.unsqueeze(dim=0)).shape 
+```
+
+</div>
+<div>
+
+```sh
+torch.Size([1, 10, 30, 30])
+```
+
+Now our image is of shape `[1, 10, 30, 30]` (it will be different if you use different values) or `[batch_size=1, color_channels=10, height=30, width=30]`.
+
+- Behind the scenes, our `nn.Conv2d()` is reducting the information stored in the image.
+
+It does this by performing operations on the input (our test image) against its internal parameters. For more on this take my deep learning course.
+
+The goal of this is similar to all of the other neural networks we've been building.
+
+- Data goes in and the layers try to update their internal parameters (patterns) to lower the loss function thanks to some help of the optimizer.
+
+The only difference is *how* the different layers calculate their parameter updates or in PyTorch terms, the operation present in the layer `forward()` method.
+
+</div>
+</div>
+
+---
+
+## Dig a bit deeper into `nn.Conv2d()`
+
+<div class="columns">
+<div>
+
+If we check out our `conv_layer_2.state_dict()` we'll find a similar weight and bias setup as we've seen before.
+
+```python
+# Check out the conv_layer_2 internal parameters
+print(conv_layer_2.state_dict())
+```
+```sh
+OrderedDict([('weight', tensor([[[[ 0.0883,  0.0958, -0.0271,  0.1061, -0.0253],
+            [ 0.0233, -0.0562,  0.0678,  0.1018, -0.0847],
+            [ 0.1004,  0.0216,  0.0853,  0.0156,  0.0557],
+            [-0.0163,  0.0890,  0.0171, -0.0539,  0.0294],
+            [-0.0532, -0.0135, -0.0469,  0.0766, -0.0911]],
+            ...,
+            [-0.0524,  0.0808, -0.0790, -0.0637,  0.0843]]]])), ('bias', tensor([ 0.0364,  0.0373, -0.0489, -0.0016,  0.1057, -0.0693,  0.0009,  0.0549, -0.0797,  0.1121]))])
+```
+
+Look at that! A bunch of random numbers for a weight and bias tensor.
+
+</div>
+
+<div>
+
+The shapes of these are manipulated by the inputs we passed to `nn.Conv2d()` when we set it up.
+
+Let's check them out.
+
+
+```python
+# Get shapes of weight and bias tensors within conv_layer_2
+print(f"conv_layer_2 weight shape: \n{conv_layer_2.weight.shape} -> [out_channels=10, in_channels=3, kernel_size=5, kernel_size=5]")
+print(f"\nconv_layer_2 bias shape: \n{conv_layer_2.bias.shape} -> [out_channels=10]")
+```
+```sh
+conv_layer_2 weight shape: 
+torch.Size([10, 3, 5, 5]) -> [out_channels=10, in_channels=3, kernel_size=5, kernel_size=5]
+
+conv_layer_2 bias shape: 
+torch.Size([10]) -> [out_channels=10]
+```
+</div>
+</div>
+
+---
+
+## Dig a bit deeper into `nn.Conv2d()` (cont.)
+
+> **Question:** What should we set the parameters of our `nn.Conv2d()` layers?
+>
+> - That's a good one. But similar to many other things in machine learning, the values of these aren't set in stone (and recall, because these values are ones we can set ourselves, they're referred to as "**hyperparameters**").
+>
+> - The best way to find out is to try out different values and see how they effect your model's performance.
+>
+> - Or even better, find a working example on a problem similar to yours (like we've done with TinyVGG) and copy it.
+
+
+We're working with a different of layer here to what we've seen before.
+
+- But the premise remains the same: **start with random numbers and update them to better represent the data.**
+
+That concludes all I want to say about `nn.Conv2d()` for now.
+
+---
+
+
+
+
+
 
 
 
