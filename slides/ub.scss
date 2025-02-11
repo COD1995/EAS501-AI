@@ -49,11 +49,11 @@ em {
 --------------------------------------------------------------*/
 blockquote {
     position: relative;
-    max-width: 90%;
+    max-width: 95%;
     /* Constrain width for slides */
     margin: 1rem auto;
     /* Reduced vertical spacing */
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 0.75rem;
     /* Smaller padding */
     border-left: 3px solid #005BBB;
     /* Thinner UB Blue accent */
@@ -61,7 +61,7 @@ blockquote {
     /* Clean white background */
     font-style: italic;
     font-family: "Roboto", "Arial", sans-serif;
-    font-size: 18px;
+    font-size: 16px;
     /* Smaller font size */
     color: #005BBB;
     /* Light UB color for text */
@@ -372,9 +372,8 @@ code {
     font-style: italic;
 }
 
-.language-python .hljs-function .hljs-title {
+.language-python .token.function {
     color: #6f42c1;
-    /* Purple for function names */
     font-weight: bold;
 }
 

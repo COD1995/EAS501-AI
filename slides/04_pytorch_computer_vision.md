@@ -1731,7 +1731,7 @@ These are common solutions but it does not end there. **Search online** for more
 <!-- _backgroundImage: "url('../slides/title.png')" -->
 <!-- _paginate: skip -->
 
-# Model 2: Building a Convolutional Neural Network (CNN)
+# 5. Model 2: Building a Convolutional Neural Network (CNN)
 
 ---
 
@@ -2111,7 +2111,379 @@ That concludes all I want to say about `nn.Conv2d()` for now.
 
 ---
 
+## Stepping through `nn.MaxPool2d()`
 
+<div class="columns">
+<div>
+
+Now let's check out what happens when we move data through `nn.MaxPool2d()`.
+
+
+```python
+print(f"Test image original shape: {test_image.shape}")
+print(f"Test image with unsqueezed dimension: {test_image.unsqueeze(dim=0).shape}")
+
+max_pool_layer = nn.MaxPool2d(kernel_size=2)
+test_image_through_conv = conv_layer(test_image.unsqueeze(dim=0))
+print(f"Shape after going through conv_layer(): {test_image_through_conv.shape}")
+
+# Pass data through the max pool layer
+test_image_through_conv_and_max_pool = max_pool_layer(test_image_through_conv)
+print(f"Shape after going through conv_layer() and max_pool_layer(): {test_image_through_conv_and_max_pool.shape}")
+```
+
+```sh
+Test image original shape: torch.Size([3, 64, 64])
+Test image with unsqueezed dimension: torch.Size([1, 3, 64, 64])
+Shape after going through conv_layer(): torch.Size([1, 10, 62, 62])
+Shape after going through conv_layer() and max_pool_layer(): torch.Size([1, 10, 31, 31])
+```
+
+</div>
+<div>
+
+Let's see this work with a smaller tensor.
+
+
+```python
+torch.manual_seed(42)
+random_tensor = torch.randn(size=(1, 1, 2, 2))
+print(f"Random tensor:\n{random_tensor}")
+print(f"Random tensor shape: {random_tensor.shape}")
+
+# Pass the random tensor through the max pool layer
+max_pool_layer = nn.MaxPool2d(kernel_size=2) 
+max_pool_tensor = max_pool_layer(random_tensor)
+print(f"\nMax pool tensor:\n{max_pool_tensor} <- this is the maximum value from random_tensor")
+print(f"Max pool tensor shape: {max_pool_tensor.shape}")
+```
+```sh
+Random tensor:
+tensor([[[[0.3367, 0.1288],
+            [0.2345, 0.2303]]]])
+Random tensor shape: torch.Size([1, 1, 2, 2])
+
+Max pool tensor:
+tensor([[[[0.3367]]]]) <- this is the maximum value from random_tensor
+Max pool tensor shape: torch.Size([1, 1, 1, 1])
+```
+This makes sense, the `nn.MaxPool2d()` layer is taking the maximum value from the input tensor.
+</div>
+</div>
+
+---
+
+## Stepping through `nn.MaxPool2d()` (cont.)
+
+<div class="columns">
+<div>
+
+```sh
+Random tensor:
+tensor([[[[0.3367, 0.1288],
+            [0.2345, 0.2303]]]])
+Random tensor shape: torch.Size([1, 1, 2, 2])
+
+Max pool tensor:
+tensor([[[[0.3367]]]]) <- this is the maximum value from random_tensor
+Max pool tensor shape: torch.Size([1, 1, 1, 1])
+```
+
+Notice the final two dimensions between `random_tensor` and `max_pool_tensor`, they go from `[2, 2]` to `[1, 1]`.
+
+In essence, they get halved.
+
+- And the change would be different for different values of `kernel_size` for `nn.MaxPool2d()`.
+
+- Also notice the value leftover in `max_pool_tensor` is the **maximum** value from `random_tensor`.
+What's happening here?
+
+Every layer in a neural network either **compresses or reduces** high-dimensional raw data into lower-dimensional, predictive representations.
+
+</div>
+<div>
+
+![each layer of a neural network compresses the original input data into a smaller representation that is (hopefully) capable of making predictions on future input data](https://raw.githubusercontent.com/mrdbourke/pytorch-deep-learning/main/images/03-conv-net-as-compression.png)
+
+This is the idea of the use of a `nn.MaxPool2d()` layer: take the maximum value from a portion of a tensor and disregard the rest.
+
+- In essence, lowering the dimensionality of a tensor whilst still retaining a (hopefully) significant portion of the information. It is the **same story** for a `nn.Conv2d()` layer.
+
+> **Exercise:** What do you think the [`nn.AvgPool2d()`](https://pytorch.org/docs/stable/generated/torch.nn.AvgPool2d.html) layer does? Try making a random tensor like we did above and passing it through. Check the input and output shapes as well as the input and output values.
+
+> **Extra-curriculum:** Lookup "most common convolutional neural networks", what architectures do you find? Are any of them contained within the [`torchvision.models`](https://pytorch.org/vision/stable/models.html) library? What do you think you could do with these?
+
+</div>
+</div>
+
+---
+
+## Wrapping up the CNN model
+
+<div class="columns">
+<div>
+
+```python
+# Setup loss and optimizer
+loss_fn = nn.CrossEntropyLoss()
+optimizer = torch.optim.SGD(params=model_2.parameters(),
+                             lr=0.1)
+```
+```python
+torch.manual_seed(42)
+
+# Measure time
+from timeit import default_timer as timer
+train_time_start_model_2 = timer()
+
+# Train and test model
+epochs = 3
+for epoch in tqdm(range(epochs)):
+    print(f"Epoch: {epoch}\n---------")
+    train_step(data_loader=train_dataloader,
+        model=model_2,
+        loss_fn=loss_fn,
+        optimizer=optimizer,
+        accuracy_fn=accuracy_fn,
+        device=device
+    )
+```
+
+</div>
+<div>
+
+```python
+    test_step(data_loader=test_dataloader,
+        model=model_2,
+        loss_fn=loss_fn,
+        accuracy_fn=accuracy_fn,
+        device=device
+    )
+
+train_time_end_model_2 = timer()
+total_train_time_model_2 = print_train_time(start=train_time_start_model_2, end=train_time_end_model_2,device=device)
+```
+
+```sh
+Epoch: 0
+---------
+Train loss: 0.59302 | Train accuracy: 78.41%
+Test loss: 0.39771 | Test accuracy: 86.01%
+
+... it is getting better trust me ...
+
+Epoch: 2
+---------
+Train loss: 0.32354 | Train accuracy: 88.28%
+Test loss: 0.32857 | Test accuracy: 88.38%
+
+Train time on cuda: 44.250 seconds
+```
+</div>
+</div>
+
+---
+
+<div class="columns">
+<div>
+
+```sh
+Epoch: 0
+---------
+Train loss: 0.59302 | Train accuracy: 78.41%
+Test loss: 0.39771 | Test accuracy: 86.01%
+
+... it is getting better trust me ...
+
+Epoch: 2
+---------
+Train loss: 0.32354 | Train accuracy: 88.28%
+Test loss: 0.32857 | Test accuracy: 88.38%
+
+Train time on cuda: 44.250 seconds
+```
+
+Wow look at that! Our CNN model is performing better than the previous models. Let's evaluate `model_2`'s results with our `eval_model()` function.
+
+
+```python
+model_2_results = eval_model(
+    model=model_2,
+    data_loader=test_dataloader,
+    loss_fn=loss_fn,
+    accuracy_fn=accuracy_fn
+)
+model_2_results
+```
+</div>
+<div>
+
+```sh
+{'model_name': 'FashionMNISTModelV2',
+    'model_loss': 0.3285697102546692,
+    'model_acc': 88.37859424920129}
+```
+
+There is a lot of literatures in which model you should be using, but from my personal experience, I conclude the following: 
+1. If you are rich and have a lot of time, the **higher accuracy the better**. Look at OpenAI's GPT-3, it has 175 billion parameters. I am pretty sure they are not motivated to improve their algorithm if it is not for deepseek R1.
+2. If you are a student or a researcher, you should be looking for a balance between accuracy and time. Toy datasets are good for developing your algorithm, but you should be looking for a real-world dataset to test your algorithm.
+3. For ameteur project, you can always start with common models, such as VGG, ResNet, etc for images, and LSTM, GRU, etc for text. For graph data, you can start with GCN, GAT, etc.
+
+</div>
+</div>
+
+---
+
+<!-- _backgroundImage: "url('../slides/title.png')" -->
+<!-- _paginate: skip -->
+
+# 6. Make and evaluate random predictions with best model
+
+---
+
+<div class="columns">
+<div>
+
+Now we want to make some predictions with our best model and visualize them.
+
+```python
+def make_predictions(model: torch.nn.Module, data: list, device: torch.device = device):
+    pred_probs = []
+    model.eval()
+    with torch.inference_mode():
+        for sample in data:
+            # Prepare sample
+            sample = torch.unsqueeze(sample, dim=0).to(device) # Add an extra dimension and send sample to device
+
+            # Forward pass (model outputs raw logit)
+            pred_logit = model(sample)
+
+            # Get prediction probability (logit -> prediction probability)
+            pred_prob = torch.softmax(pred_logit.squeeze(), dim=0) # note: perform softmax on the "logits" dimension, not "batch" dimension (in this case we have a batch size of 1, so can perform on dim=0)
+```
+</div>
+<div>
+
+```python
+            # Get pred_prob off GPU for further calculations
+            pred_probs.append(pred_prob.cpu())
+
+    # Stack the pred_probs to turn list into a tensor
+    return torch.stack(pred_probs)
+```
+
+```python
+import random
+random.seed(42)
+test_samples = []
+test_labels = []
+for sample, label in random.sample(list(test_data), k=9):
+    test_samples.append(sample)
+    test_labels.append(label)
+
+# View the first test sample shape and label
+print(f"Test sample image shape: {test_samples[0].shape}\nTest sample label: {test_labels[0]} ({class_names[test_labels[0]]})")
+```
+```sh
+Test sample image shape: torch.Size([1, 28, 28])
+Test sample label: 5 (Sandal)
+```
+
+</div>
+</div>
+
+---
+
+<div class="columns">
+<div>
+
+If you are interested you can keep reading the following slides but it is completely optional. 
+
+And now we can use our `make_predictions()` function to predict on `test_samples`.
+```python
+# Make predictions on test samples with model 2
+pred_probs= make_predictions(model=model_2,
+                             data=test_samples)
+
+# View first two prediction probabilities list
+pred_probs[:2]
+```
+```sh
+tensor([[2.4012e-07, 6.5406e-08, 4.8069e-08, 2.1070e-07, 1.4175e-07, 9.9992e-01,
+            2.1711e-07, 1.6177e-05, 3.7849e-05, 2.7548e-05],
+        [1.5646e-02, 8.9752e-01, 3.6928e-04, 6.7402e-02, 1.2920e-02, 4.9539e-05,
+            5.6485e-03, 1.9456e-04, 2.0808e-04, 3.7861e-05]])
+```
+</div>
+<div>
+
+Excellent!
+
+And now we can go from prediction probabilities to prediction labels by taking the `torch.argmax()` of the output of the `torch.softmax()` activation function.
+
+
+```python
+# Turn the prediction probabilities into prediction labels by taking the argmax()
+pred_classes = pred_probs.argmax(dim=1)
+pred_classes
+```
+```sh
+tensor([5, 1, 7, 4, 3, 0, 4, 7, 1])
+```
+
+```python
+# Are our predictions in the same form as our test labels?
+test_labels, pred_classes
+```
+```sh
+([5, 1, 7, 4, 3, 0, 4, 7, 1], tensor([5, 1, 7, 4, 3, 0, 4, 7, 1]))
+```
+
+</div>
+</div>
+
+---
+
+## Visualizing predictions
+
+<div class="columns">
+<div>
+
+```python
+# Plot predictions
+plt.figure(figsize=(9, 9))
+nrows = 3
+ncols = 3
+for i, sample in enumerate(test_samples):
+  # Create a subplot
+  plt.subplot(nrows, ncols, i+1)
+  plt.imshow(sample.squeeze(), cmap="gray")
+
+  # Find the prediction label (in text form, e.g. "Sandal")
+  pred_label = class_names[pred_classes[i]]
+
+  # Get the truth label (in text form, e.g. "T-shirt")
+  truth_label = class_names[test_labels[i]]
+
+  # Create the title text of the plot
+  title_text = f"Pred: {pred_label} | Truth: {truth_label}"
+
+  # Check for equality and change title colour accordingly
+  if pred_label == truth_label:
+      plt.title(title_text, fontsize=10, c="g") # green text if correct
+  else:
+      plt.title(title_text, fontsize=10, c="r") # red text if wrong
+  plt.axis(False);
+```
+
+</div>
+<div>
+
+![](../slides/04_imgs/03_pytorch_computer_vision_111_0.png)
+
+--- 
+
+## Making a confusion matrix for further prediction evaluation
 
 
 
