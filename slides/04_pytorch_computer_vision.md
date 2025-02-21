@@ -23,7 +23,15 @@ auto-scaling: true
 ---
 ## Table of Contents
 
+- [1. Get a dataset](#1-get-a-dataset)
+- [2. Prepare DataLoader](#2-prepare-dataloader)
+- [3. Model 0: Build a baseline model](#3-model-0-build-a-baseline-model)
+- [3. Model 0: Build a baseline model (cont.)](#3-model-0-build-a-baseline-model-cont)
 
+- [4. Model 1: Building a better model with non-linearity](#4-model-1-building-a-better-model-with-non-linearity)
+- [5. Model 2: Building a Convolutional Neural Network (CNN)](#5-model-2-building-a-convolutional-neural-network-cnn)
+- [6. Make and evaluate random predictions with best model](#6-make-and-evaluate-random-predictions-with-best-model)
+- [7. Save and load best performing model](#7-save-and-load-best-performing-model)
 
 ---
 
@@ -2485,26 +2493,227 @@ for i, sample in enumerate(test_samples):
 
 ## Making a confusion matrix for further prediction evaluation
 
+<div class="columns">
+<div>
+
+There are many different evaluation metrics we can use for classification problems. One of the most visual is a [confusion matrix](https://www.dataschool.io/simple-guide-to-confusion-matrix-terminology/).
+
+A confusion matrix shows you where your classification model got confused between predictions and true labels.
+
+To make a confusion matrix, we'll go through three steps:
+1. Make predictions with our trained model, `model_2` (a confusion matrix compares predictions to true labels).
+2. Make a confusion matrix using [`torchmetrics.ConfusionMatrix`](https://torchmetrics.readthedocs.io/en/latest/references/modules.html?highlight=confusion#confusionmatrix).
+3. Plot the confusion matrix using [`mlxtend.plotting.plot_confusion_matrix()`](http://rasbt.github.io/mlxtend/user_guide/plotting/plot_confusion_matrix/).
+
+Let's start by making predictions with our trained model.
+
+</div>
+<div>
+
+```python
+# Import tqdm for progress bar
+from tqdm.auto import tqdm
+
+# 1. Make predictions with trained model
+y_preds = []
+model_2.eval()
+with torch.inference_mode():
+  for X, y in tqdm(test_dataloader, desc="Making predictions"):
+    # Send data and targets to target device
+    X, y = X.to(device), y.to(device)
+    # Do the forward pass
+    y_logit = model_2(X)
+    # Turn predictions from logits -> prediction probabilities -> predictions labels
+    y_pred = torch.softmax(y_logit, dim=1).argmax(dim=1) # note: perform softmax on the "logits" dimension, not "batch" dimension (in this case we have a batch size of 32, so can perform on dim=1)
+    # Put predictions on CPU for evaluation
+    y_preds.append(y_pred.cpu())
+# Concatenate list of predictions into a tensor
+y_pred_tensor = torch.cat(y_preds)
+```
+
+</div>
+</div>
+
+---
+
+## Making a confusion matrix for further prediction evaluation (cont.)
+
+<div class="columns">
+<div>
+
+Wonderful!
+
+Now we've got predictions, let's go through steps 2 & 3:
+
+2. Make a confusion matrix using [`torchmetrics.ConfusionMatrix`](https://torchmetrics.readthedocs.io/en/latest/references/modules.html?highlight=confusion#confusionmatrix).
+3. Plot the confusion matrix using [`mlxtend.plotting.plot_confusion_matrix()`](http://rasbt.github.io/mlxtend/user_guide/plotting/plot_confusion_matrix/).
+
+First we'll create a `torchmetrics.ConfusionMatrix` instance telling it how many classes we're dealing with by setting `num_classes=len(class_names)`.
+
+Then we'll create a confusion matrix (in tensor format) by passing our instance our model's predictions (`preds=y_pred_tensor`) and targets (`target=test_data.targets`).
+
+Finally we can plot our confusion matrix using the `plot_confusion_matrix()` function from `mlxtend.plotting`.
 
 
+</div>
+<div>
+
+```python
+from torchmetrics import ConfusionMatrix
+from mlxtend.plotting import plot_confusion_matrix
+
+# 2. Setup confusion matrix instance and compare predictions to targets
+confmat = ConfusionMatrix(num_classes=len(class_names), task='multiclass')
+confmat_tensor = confmat(preds=y_pred_tensor,
+                         target=test_data.targets)
+
+# 3. Plot the confusion matrix
+fig, ax = plot_confusion_matrix(
+    conf_mat=confmat_tensor.numpy(), # matplotlib likes working with NumPy
+    class_names=class_names, # turn the row and column labels into class names
+    figsize=(10, 7)
+);
+```
+
+</div>
+</div>
+
+---
+
+## Confusion Matrix
+
+<div class="columns">
+<div>
+
+![](../slides/04_imgs/03_pytorch_computer_vision_120_0.png)
+
+</div>
+<div>
+We can see our model does fairly well since most of the dark squares are down the diagonal from top left to bottom right (and ideal model will have only values in these squares and 0 everywhere else).
+
+- The model gets most "confused" on classes that are similar, for example predicting "Pullover" for images that are actually labelled "Shirt". And the same for predicting "Shirt" for classes that are actually labelled "T-shirt/top".
+
+This kind of information is often more helpful than a single accuracy metric because it tells use *where* a model is getting things wrong.
+
+- It also hints at *why* the model may be getting certain things wrong.
+
+- It's understandable the model sometimes predicts "Shirt" for images labelled "T-shirt/top".
+
+We can use this kind of information to further inspect our models and data to see how it could be improved.
+
+</div>
+</div>
+
+---
+
+<!-- _backgroundImage: "url('../slides/title.png')" -->
+<!-- _paginate: skip -->
+
+# 7. Save and load best performing model
+
+---
+
+<div class="columns">
+<div>
+
+Let's finish this section off by saving and loading in our best performing model.
+
+Recall from [notebook 01](https://www.learnpytorch.io/01_pytorch_workflow/#5-saving-and-loading-a-pytorch-model) we can save and load a PyTorch model using a combination of:
+* `torch.save` - a function to save a whole PyTorch model or a model's `state_dict()`.
+* `torch.load` - a function to load in a saved PyTorch object.
+* `torch.nn.Module.load_state_dict()` - a function to load a saved `state_dict()` into an existing model instance.
+
+You can see more of these three in the [PyTorch saving and loading models documentation](https://pytorch.org/tutorials/beginner/saving_loading_models.html).
+
+For now, let's save our `model_2`'s `state_dict()` then load it back in and evaluate it to make sure the save and load went correctly.
+</div>
+<div>
+
+```python
+from pathlib import Path
+
+# Create models directory (if it doesn't already exist), see: https://docs.python.org/3/library/pathlib.html#pathlib.Path.mkdir
+MODEL_PATH = Path("models")
+MODEL_PATH.mkdir(parents=True, # create parent directories if needed
+                 exist_ok=True # if models directory already exists, don't error
+)
+
+# Create model save path
+MODEL_NAME = "03_pytorch_computer_vision_model_2.pth"
+MODEL_SAVE_PATH = MODEL_PATH / MODEL_NAME
+
+# Save the model state dict
+print(f"Saving model to: {MODEL_SAVE_PATH}")
+torch.save(obj=model_2.state_dict(), # only saving the state_dict() only saves the learned parameters
+           f=MODEL_SAVE_PATH)
+```
+</div>
+</div>
+
+---
+
+<div class="columns">
+<div>
+
+Since we're using `load_state_dict()`, we'll need to create a new instance of `FashionMNISTModelV2()` with the same input parameters as our saved model `state_dict()`.
 
 
+```python
+# Note: loading model will error if the shapes here aren't the same as the saved version
+loaded_model_2 = FashionMNISTModelV2(input_shape=1,
+                                    hidden_units=10, # try changing this to 128 and seeing what happens
+                                    output_shape=10)
+
+# Load in the saved state_dict()
+loaded_model_2.load_state_dict(torch.load(f=MODEL_SAVE_PATH))
+loaded_model_2 = loaded_model_2.to(device)
+```
+```python
+torch.manual_seed(42)
+
+loaded_model_2_results = eval_model(
+    model=loaded_model_2,
+    data_loader=test_dataloader,
+    loss_fn=loss_fn,
+    accuracy_fn=accuracy_fn
+)
+loaded_model_2_results
+```
+
+</div>
+<div>
+
+```sh
+    {'model_name': 'FashionMNISTModelV2',
+     'model_loss': 0.3285697102546692,
+     'model_acc': 88.37859424920129}
+```
 
 
+Do these results look the same as `model_2_results`?
 
 
+```python
+model_2_results
+```
+```sh
+{'model_name': 'FashionMNISTModelV2',
+    'model_loss': 0.3285697102546692,
+    'model_acc': 88.37859424920129}
+```
 
+We can find out if two tensors are close to each other using `torch.isclose()` and passing in a tolerance level of closeness via the parameters `atol` (absolute tolerance) and `rtol` (relative tolerance);
 
+```python
+# Check to see if results are close to each other (if they are very far away, there may be an error)
+torch.isclose(torch.tensor(model_2_results["model_loss"]),
+              torch.tensor(loaded_model_2_results["model_loss"]),
+              atol=1e-08, # absolute tolerance
+              rtol=0.0001) # relative tolerance
+```
 
-
-
-
-
-
-
-
-
-
+</div>
+</div>
 
 
 
